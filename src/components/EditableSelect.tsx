@@ -3,8 +3,10 @@ import { Text } from '@react-pdf/renderer'
 import compose from '../styles/compose'
 
 export interface SelectOption {
-  value: string
+  value: string 
   text: string
+  cost?:number
+  creditCost?:number
 }
 
 interface Props {
@@ -24,7 +26,7 @@ const EditableSelect: FC<Props> = ({
   onChange,
   pdfMode,
 }) => {
-  const [isEditing, setIsEditing] = useState<boolean>(false)
+  const [isEditing, setIsEditing] = useState<boolean>(true)
 
   return (
     <>
@@ -37,7 +39,7 @@ const EditableSelect: FC<Props> = ({
               className={'select ' + (className ? className : '')}
               value={value}
               onChange={onChange ? (e) => onChange(e.target.value) : undefined}
-              onBlur={() => setIsEditing(false)}
+              // onBlur={() => setIsEditing(false)}
               autoFocus={true}
             >
               {options?.map((option) => (

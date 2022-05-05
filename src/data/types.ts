@@ -1,6 +1,7 @@
 import { CSSProperties } from 'react'
 
 export interface ProductLine {
+  itemNameNew:string
   description: string
   quantity: string
   rate: string
@@ -46,6 +47,19 @@ export interface Invoice {
   notes: string
   termLabel: string
   term: string
+
+  paymentType:string
+  id?:string
+  isDeleted?:boolean
+}
+
+export interface ProductType{
+  value:string
+  text:string
+  cost_cash:any
+  cost:any
+  id?:any
+  isDeleted?:boolean
 }
 
 export interface CSSClasses {
