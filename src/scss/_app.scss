@@ -1,12 +1,95 @@
+.loginPage{
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  background-color: #0093E9;
+  background-image: linear-gradient(160deg, #0093E9 0%, #80D0C7 100%);
+  .loginMessage{
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+  }
+  .loginForm{
+    display: flex;
+    width: 50%;
+    flex-direction: column;
+    padding: 50px;
+    align-items: center;
+    justify-content: center;
+    input, select {
+      width: 100%;
+      padding: 12px 20px;
+      margin: 8px 0;
+      display: inline-block;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    
+    input[type=submit] {
+      width: 80%;
+      background-color: #4CAF50;
+      color: white;
+      padding: 14px 20px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    input[type=submit]:hover {
+      background-color: #45a049;
+    }
+  }
+}
+
+.dashBoard{
+  display: flex;
+  flex-direction: column;
+  .filtersMenu{
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    padding: 10px;
+    width: 100%;
+  }
+  .mainContent{
+    width: 100%;
+    flex:1;
+    height: 50%;
+    display: flex;
+    flex-direction: row;
+    .cards{
+      margin:5px;
+      flex:1; 
+      background: rgb(200, 250, 205);
+      padding: 5px;
+      color:rgb(0, 82, 73);
+
+      border-radius: 10px;
+    }
+  }
+  .analyticsWrapper{
+    margin: 5px;
+    height: 400px;
+    padding: 5px;
+    .barGraph{
+      width: 100%;
+    }
+  }
+ 
+}
+
 .app {
 width: 80%;
-min-width: 400px;
-overflow: scroll;
+min-width: 390px;
+height: 90%;
 }
 
 .mainApp{
   display: flex;
   flex-direction: row;
+  // overflow: auto;
 }
 
 .menuItemContainer{
@@ -21,9 +104,51 @@ overflow: scroll;
   .menuItemContainer{
     flex-direction: row;
   }
+  .app{
+    width: 100vw;
+    padding: 10px;
+  }
+  .menuItemContainer{
+    overflow: hidden;
+  }
+  .loginPage{
+    .loginMessage{
+      display: none
+    }
+    .loginForm{
+      width: 100%;
+    }
+  }
+  .dashBoard{
+   // height: 1200px;
+    //overflow: scroll;
+    // .filtersMenu{
+    //   height: 100px;
+    // }
+    .mainContent{
+    
+      flex-direction: column-reverse;
+      .cards{
+        overflow: auto;
+      }
+    }
+    .analyticsWrapper{
+      height: 300px;
+      .barGraph{
+        padding: 10px;
+        // width: 100%;
+         height: 300px;
+      }
+    }
+  }
 }
 
-
+.polaroid {
+  padding: 10px 10px 20px 10px;
+  border: 1px solid #BFBFBF;
+  background-color: white;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
 
 .btn {
   display: inline-block;
@@ -205,4 +330,8 @@ overflow: scroll;
   left: 0;
   border-radius: 4px;
   box-shadow: 2px 1px 6px rgba(0, 0, 0, 0.15);
+}
+
+.ag-header-icon.ag-header-cell-menu-button {
+  opacity: 1 !important;
 }

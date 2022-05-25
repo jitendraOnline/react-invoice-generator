@@ -87,8 +87,8 @@ const ProductAddForm: FC<Props> = ({ selectedProduct, addProduct, showProductLis
         </span>
         <View className="flex" >
        
-          <View className="w-50">
-          <div className="w-50" style={{display:'flex',flexDirection:'row'}}>
+          <View >
+          <div  style={{display:'flex',flexDirection:'row'}}>
               <EditableInput
                   value="Product Name"
               />
@@ -99,7 +99,7 @@ const ProductAddForm: FC<Props> = ({ selectedProduct, addProduct, showProductLis
                 />
           </div>
 
-          <div className="w-50" style={{display:'flex',flexDirection:'row'}}>
+          <div   style={{display:'flex',flexDirection:'row'}}>
               <EditableInput
                   value="Credit Cost"
                 />
@@ -112,7 +112,7 @@ const ProductAddForm: FC<Props> = ({ selectedProduct, addProduct, showProductLis
                 />
             </div>
 
-          <div className="w-50" style={{display:'flex',flexDirection:'row'}}>
+          <div  style={{display:'flex',flexDirection:'row'}}>
               <EditableInput
                   value="Cash Cost"
                 />

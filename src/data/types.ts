@@ -51,6 +51,7 @@ export interface Invoice {
   paymentType:string
   id?:string
   isDeleted?:boolean
+  partialAmountPaid?:string
 }
 
 export interface ProductType{

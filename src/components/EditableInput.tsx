@@ -9,21 +9,27 @@ interface Props {
   type?:string
   onChange?: (value: string) => void
   pdfMode?: boolean
+  dataList?:any
+  filedName?:string
 }
 
-const EditableInput: FC<Props> = ({ className, placeholder, value, onChange, pdfMode ,type}) => {
+const EditableInput: FC<Props> = ({ className, placeholder, value, onChange, pdfMode ,type, dataList,filedName}) => {
   return (
     <>
       {pdfMode ? (
         <Text style={compose('span ' + (className ? className : ''))}>{value}</Text>
       ) : (
-        <input
-          type={type?type:"text"}
-          className={'input ' + (className ? className : '')}
-          placeholder={placeholder || ''}
-          value={value || ''}
-          onChange={onChange ? (e) => onChange(e.target.value) : undefined}
-        />
+        <><input
+            type={type ? type : "text"}
+            className={'input ' + (className ? className : '')}
+            placeholder={placeholder || ''}
+            value={value || ''}
+            onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+            list={filedName}/>
+            
+            {dataList && filedName && <datalist id={filedName}>
+              {dataList.map((data:any) => <option value={data} key={data}></option>)}
+            </datalist>}</>
       )}
     </>
   )

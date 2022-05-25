@@ -44,5 +44,6 @@ export const initialInvoice: Invoice = {
   notes: 'It was great doing business with you.',
   termLabel: 'Terms & Conditions',
   term: 'Please make the payment by the due date.',
-  paymentType:'Cash'
+  paymentType:'Cash',
+  partialAmountPaid:'0',
 }

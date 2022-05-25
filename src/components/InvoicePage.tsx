@@ -1,233 +1,284 @@
-import React, { FC, useState, useEffect } from 'react'
-import { Invoice, ProductLine } from '../data/types'
-import { initialInvoice, initialProductLine } from '../data/initialData'
-import EditableInput from './EditableInput'
-import EditableSelect from './EditableSelect'
-import EditableTextarea from './EditableTextarea'
-import EditableCalendarInput from './EditableCalendarInput'
+import React, { FC, useState, useEffect } from "react";
+import { Invoice, ProductLine } from "../data/types";
+import { initialInvoice, initialProductLine } from "../data/initialData";
+import EditableInput from "./EditableInput";
+import EditableSelect from "./EditableSelect";
+import EditableTextarea from "./EditableTextarea";
+import EditableCalendarInput from "./EditableCalendarInput";
 
-import Document from './Document'
-import Page from './Page'
-import View from './View'
-import Text from './Text'
-import { Font } from '@react-pdf/renderer'
-import Download from './DownloadPDF'
-import format from 'date-fns/format'
-
+import Document from "./Document";
+import Page from "./Page";
+import View from "./View";
+import Text from "./Text";
+import { Font } from "@react-pdf/renderer";
+import Download from "./DownloadPDF";
+import format from "date-fns/format";
 
 Font.register({
-  family: 'Nunito',
+  family: "Nunito",
   fonts: [
-    { src: 'https://fonts.gstatic.com/s/nunito/v12/XRXV3I6Li01BKofINeaE.ttf' },
-    { src: 'https://fonts.gstatic.com/s/nunito/v12/XRXW3I6Li01BKofA6sKUYevN.ttf', fontWeight: 600 },
+    { src: "https://fonts.gstatic.com/s/nunito/v12/XRXV3I6Li01BKofINeaE.ttf" },
+    {
+      src: "https://fonts.gstatic.com/s/nunito/v12/XRXW3I6Li01BKofA6sKUYevN.ttf",
+      fontWeight: 600,
+    },
   ],
-})
+});
 
 interface Props {
-  data?: any
-  pdfMode?: boolean
-  addInvoiceData?:any
-  productList?:any
-  productListForDropDown?:any,
-  showInvoiceList?:any,
-  updateInvoiceData?:any,
+  data?: any;
+  pdfMode?: boolean;
+  addInvoiceData?: any;
+  productList?: any;
+  productListForDropDown?: any;
+  showInvoiceList?: any;
+  updateInvoiceData?: any;
 }
 
-const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForDropDown, productList, showInvoiceList, updateInvoiceData }) => {
-  const [invoice, setInvoice] = useState<Invoice>(data ? { ...data } : { ...initialInvoice })
-  const [subTotal, setSubTotal] = useState<number>()
-  const [saleTax, setSaleTax] = useState<number>()
+const InvoicePage: FC<Props> = ({
+  data,
+  pdfMode,
+  addInvoiceData,
+  productListForDropDown,
+  productList,
+  showInvoiceList,
+  updateInvoiceData,
+}) => {
+  const [invoice, setInvoice] = useState<Invoice>(
+    data
+      ? { ...data }
+      : { ...initialInvoice, invoiceTitle: "INV" + new Date().getTime() }
+  );
+  const [subTotal, setSubTotal] = useState<number>();
+  const [saleTax, setSaleTax] = useState<number>();
 
   useEffect(() => {
     if (data) {
-      setInvoice(data);
+      if (!data.id) {
+        const data1 = { ...data, invoiceTitle: "INV" + new Date().getTime() };
+        setInvoice(data1);
+      } else {
+        if (!data.partialAmountPaid) {
+          data.partialAmountPaid = "0";
+        }
+        setInvoice({ ...data });
+      }
     }
-  }, [data])
+  }, [data]);
 
-  const dateFormat = 'MMM dd, yyyy'
-  const invoiceDate = invoice.invoiceDate !== '' ? new Date(invoice.invoiceDate) : new Date()
+  const dateFormat = "MMM dd, yyyy";
+  const invoiceDate =
+    invoice.invoiceDate !== "" ? new Date(invoice.invoiceDate) : new Date();
   const invoiceDueDate =
-    invoice.invoiceDueDate !== ''
+    invoice.invoiceDueDate !== ""
       ? new Date(invoice.invoiceDueDate)
-      : new Date(invoiceDate.valueOf())
+      : new Date(invoiceDate.valueOf());
 
-  if (invoice.invoiceDueDate === '') {
-    invoiceDueDate.setDate(invoiceDueDate.getDate() + 30)
+  if (invoice.invoiceDueDate === "") {
+    invoiceDueDate.setDate(invoiceDueDate.getDate() + 30);
   }
 
-  const handlePaymentChange = (paymentType:string) => {
+  const handlePaymentChange = (paymentType: string) => {
     const productLines = invoice.productLines.map((productLine, i) => {
-        const newProductLine = { ...productLine }
-          productList.forEach((data: any)=>{
-            if(data.value+'' === newProductLine.itemNameNew){
-              //newProductLine[name] = value;
-              newProductLine['description'] = data.text;
-              if(paymentType === 'Cash'){
-                newProductLine['rate']= data.cost_cash+'';
-              }
-              else{
-                newProductLine['rate']= data.cost+'';
-              }
-            }
-            
-          })
-      return newProductLine 
-    })
-    setInvoice({...invoice, productLines,paymentType:paymentType})
-  }
+      const newProductLine = { ...productLine };
+      productList.forEach((data: any) => {
+        if (data.value + "" === newProductLine.itemNameNew) {
+          //newProductLine[name] = value;
+          newProductLine["description"] = data.text;
+          if (paymentType === "Cash") {
+            newProductLine["rate"] = data.cost_cash + "";
+          } else {
+            newProductLine["rate"] = data.cost + "";
+          }
+        }
+      });
+      return newProductLine;
+    });
+    setInvoice({ ...invoice, productLines, paymentType: paymentType });
+  };
 
   const handleChange = (name: keyof Invoice, value: string | number) => {
-    if (name !== 'productLines') {
-      const newInvoice = { ...invoice }
+    if (name !== "productLines") {
+      const newInvoice = { ...invoice };
 
-      if (name === 'logoWidth' && typeof value === 'number') {
-        newInvoice[name] = value
-      } else if (name !== 'logoWidth'  && name !== 'isDeleted'&& typeof value === 'string') {
-        newInvoice[name] = value
+      if (name === "logoWidth" && typeof value === "number") {
+        newInvoice[name] = value;
+      } else if (
+        name !== "logoWidth" &&
+        name !== "isDeleted" &&
+        typeof value === "string"
+      ) {
+        newInvoice[name] = value;
       }
-      setInvoice(newInvoice)
-      setTimeout(()=>{
-        if(name === 'paymentType'){
-          handlePaymentChange(value+'');
+      setInvoice(newInvoice);
+      setTimeout(() => {
+        if (name === "paymentType") {
+          handlePaymentChange(value + "");
         }
-      },1)
+      }, 1);
     }
-  }
+  };
 
-  const handleProductLineChange = (index: number, name: keyof ProductLine, value: string) => {
+  const handleProductLineChange = (
+    index: number,
+    name: keyof ProductLine,
+    value: string
+  ) => {
     const productLines = invoice.productLines.map((productLine, i) => {
       if (i === index) {
-        const newProductLine = { ...productLine }
+        const newProductLine = { ...productLine };
 
-        if (name === 'description') {
-          newProductLine[name] = value
-        } 
-        else if (name === 'itemNameNew') {
-          
-          productList.forEach((data:any)=>{
-            if(data.value+'' === value){
+        if (name === "description") {
+          newProductLine[name] = value;
+        } else if (name === "itemNameNew") {
+          productList.forEach((data: any) => {
+            if (data.value + "" === value) {
               newProductLine[name] = value;
-              newProductLine['description'] = data.text;
-              if(invoice.paymentType === 'Cash'){
-                newProductLine['rate']= data.cost_cash+'';
-              }
-              else{
-                newProductLine['rate']= data.cost+'';
+              newProductLine["description"] = data.text;
+              if (invoice.paymentType === "Cash") {
+                newProductLine["rate"] = data.cost_cash + "";
+              } else {
+                newProductLine["rate"] = data.cost + "";
               }
             }
-          })
-          
+          });
         } else {
           if (
-            value[value.length - 1] === '.' ||
-            (value[value.length - 1] === '0' && value.includes('.'))
+            value[value.length - 1] === "." ||
+            (value[value.length - 1] === "0" && value.includes("."))
           ) {
-            newProductLine[name] = value
+            newProductLine[name] = value;
           } else {
-            const n = parseFloat(value)
+            const n = parseFloat(value);
 
-            newProductLine[name] = (n ? n : 0).toString()
+            newProductLine[name] = (n ? n : 0).toString();
           }
         }
 
-        return newProductLine
+        return newProductLine;
       }
 
-      return { ...productLine }
-    })
+      return { ...productLine };
+    });
 
-    setInvoice({ ...invoice, productLines })
-  }
+    setInvoice({ ...invoice, productLines });
+  };
 
   const handleRemove = (i: number) => {
-    const productLines = invoice.productLines.filter((productLine, index) => index !== i)
+    const productLines = invoice.productLines.filter(
+      (productLine, index) => index !== i
+    );
 
-    setInvoice({ ...invoice, productLines })
-  }
+    setInvoice({ ...invoice, productLines });
+  };
 
   const handleAdd = () => {
-    const productLines = [...invoice.productLines, { ...initialProductLine }]
+    const productLines = [...invoice.productLines, { ...initialProductLine }];
 
-    setInvoice({ ...invoice, productLines })
-  }
+    setInvoice({ ...invoice, productLines });
+  };
 
   const calculateAmount = (quantity: string, rate: string) => {
-    const quantityNumber = parseFloat(quantity)
-    const rateNumber = parseFloat(rate)
-    const amount = quantityNumber && rateNumber ? quantityNumber * rateNumber : 0
+    const quantityNumber = parseFloat(quantity);
+    const rateNumber = parseFloat(rate);
+    const amount =
+      quantityNumber && rateNumber ? quantityNumber * rateNumber : 0;
 
-    return amount.toFixed(2)
-  }
+    return amount.toFixed(2);
+  };
 
   useEffect(() => {
-    let subTotal = 0
+    let subTotal = 0;
 
     invoice.productLines.forEach((productLine) => {
-      const quantityNumber = parseFloat(productLine.quantity)
-      const rateNumber = parseFloat(productLine.rate)
-      const amount = quantityNumber && rateNumber ? quantityNumber * rateNumber : 0
+      const quantityNumber = parseFloat(productLine.quantity);
+      const rateNumber = parseFloat(productLine.rate);
+      const amount =
+        quantityNumber && rateNumber ? quantityNumber * rateNumber : 0;
 
-      subTotal += amount
-    })
+      subTotal += amount;
+    });
 
-    setSubTotal(subTotal)
-  }, [invoice.productLines])
+    setSubTotal(subTotal);
+  }, [invoice.productLines]);
 
   useEffect(() => {
-    const match = invoice.taxLabel.match(/(\d+)%/)
-    const taxRate = match ? parseFloat(match[1]) : 0
-    const saleTax = subTotal ? (subTotal * taxRate) / 100 : 0
+    const match = invoice.taxLabel.match(/(\d+)%/);
+    const taxRate = match ? parseFloat(match[1]) : 0;
+    const saleTax = subTotal ? (subTotal * taxRate) / 100 : 0;
+    setSaleTax(saleTax);
+  }, [subTotal, invoice.taxLabel, invoice.partialAmountPaid]);
 
-    setSaleTax(saleTax)
-  }, [subTotal, invoice.taxLabel])
-
-  const saveInvoice = () =>{
-   
+  const saveInvoice = (event: any) => {
     // addInvoiceData.settings({
     //   timestampsInSnapshots: true
     // });
-    if(!invoice.clientName){
-      alert('Please Enter customer name');
+    if (!invoice.clientName) {
+      alert("Please Enter customer name");
+    } else {
+      addInvoiceData(invoice, "invoiceList").then((data: any) => {
+        console.log("i am saved", data);
+        showInvoiceList();
+      });
     }
-    else{
-      addInvoiceData(invoice,"invoiceList").then(showInvoiceList());
-    }
-  }
+  };
 
-  const updateInvoice = () =>{
-   
-    if(!invoice.clientName){
-      alert('Please Enter customer name');
+  const updateInvoice = () => {
+    if (!invoice.clientName) {
+      alert("Please Enter customer name");
+    } else {
+      updateInvoiceData(invoice, "invoiceList").then(() => {
+        showInvoiceList();
+      });
     }
-    else{
-      updateInvoiceData(invoice,"invoiceList").then(showInvoiceList());
-    }
-  }
+  };
 
-  const paidInvoice = () =>{
-    if (window.confirm("Are you sure payment is done for this invoice.?")) {
-      updateInvoiceData({...invoice,paymentStatus:'Paid',dateOfPayment:new Date()},"invoiceList").then(showInvoiceList());
+  const paidInvoice = () => {
+    if (!invoice.clientName) {
+      alert("Please Enter customer name");
+    } else if (
+      window.confirm("Are you sure payment is done for this invoice.?")
+    ) {
+      updateInvoiceData(
+        { ...invoice, paymentStatus: "Paid", dateOfPayment: new Date() },
+        "invoiceList"
+      ).then(() => {
+        showInvoiceList();
+      });
     }
-    if(!invoice.clientName){
-      alert('Please Enter customer name');
-    }
-  }
+  };
 
-  const deleteInvoice = () =>{
-   
-    if(!invoice.clientName){
-      alert('Please Enter customer name');
+  const deleteInvoice = () => {
+    if (!invoice.clientName) {
+      alert("Please Enter customer name");
+    } else if (
+      window.confirm("Are you sure you want to delete this Invoice  ?")
+    ) {
+      updateInvoiceData(
+        { ...invoice, isDeleted: true, dateOfDelete: new Date() },
+        "invoiceList"
+      ).then(() => {
+        showInvoiceList();
+      });
     }
-    else{
-      updateInvoiceData({...invoice,isDeleted:true},"invoiceList").then(showInvoiceList());
+  };
+
+  const getPrefilledData = (key: any) => {
+    if (key) {
+      try {
+        let dataList = JSON.parse(localStorage.getItem(key) as string);
+        if (dataList && dataList.length > 0) {
+          return dataList;
+        }
+      } catch (e) {
+        return [];
+      }
     }
-  }
+  };
 
   return (
     <Document pdfMode={pdfMode}>
       <Page className="invoice-wrapper" pdfMode={pdfMode}>
-        
-
         <View className="flex" pdfMode={pdfMode}>
           <View className="w-50" pdfMode={pdfMode}>
             {/* <EditableFileImage
@@ -243,25 +294,25 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
               className="fs-18 bold"
               placeholder="Your Company"
               value={invoice.companyName}
-              onChange={(value) => handleChange('companyName', value)}
+              onChange={(value) => handleChange("companyName", value)}
               pdfMode={pdfMode}
             />
             <EditableInput
               placeholder="Your Name"
               value={invoice.name}
-              onChange={(value) => handleChange('name', value)}
+              onChange={(value) => handleChange("name", value)}
               pdfMode={pdfMode}
             />
             <EditableInput
               placeholder="Company's Address"
               value={invoice.companyAddress}
-              onChange={(value) => handleChange('companyAddress', value)}
+              onChange={(value) => handleChange("companyAddress", value)}
               pdfMode={pdfMode}
             />
             <EditableInput
               placeholder="City, State Zip"
               value={invoice.companyAddress2}
-              onChange={(value) => handleChange('companyAddress2', value)}
+              onChange={(value) => handleChange("companyAddress2", value)}
               pdfMode={pdfMode}
             />
             {/* <EditableSelect
@@ -276,7 +327,7 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
               className="fs-40 right bold"
               placeholder="Invoice"
               value={invoice.title}
-              onChange={(value) => handleChange('title', value)}
+              onChange={(value) => handleChange("title", value)}
               pdfMode={pdfMode}
             />
           </View>
@@ -287,25 +338,29 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
             <EditableInput
               className="bold dark mb-5"
               value={invoice.billTo}
-              onChange={(value) => handleChange('billTo', value)}
+              onChange={(value) => handleChange("billTo", value)}
               pdfMode={pdfMode}
             />
             <EditableInput
               placeholder="Your Client's Name"
               value={invoice.clientName}
-              onChange={(value) => handleChange('clientName', value)}
+              onChange={(value) => handleChange("clientName", value)}
               pdfMode={pdfMode}
+              dataList={getPrefilledData("clientName")}
+              filedName={"clientName"}
             />
             <EditableInput
               placeholder="Client's Address"
               value={invoice.clientAddress}
-              onChange={(value) => handleChange('clientAddress', value)}
+              onChange={(value) => handleChange("clientAddress", value)}
               pdfMode={pdfMode}
+              dataList={getPrefilledData("clientAddress")}
+              filedName={"clientAddress"}
             />
             <EditableInput
               placeholder="Phone number "
               value={invoice.clientAddress2}
-              onChange={(value) => handleChange('clientAddress2', value)}
+              onChange={(value) => handleChange("clientAddress2", value)}
               pdfMode={pdfMode}
             />
             {/* <EditableSelect
@@ -314,22 +369,25 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
               onChange={(value) => handleChange('clientCountry', value)}
               pdfMode={pdfMode}
             /> */}
-             <View className="flex mb-5" pdfMode={pdfMode}>
+            <View className="flex mb-5" pdfMode={pdfMode}>
               <View className="w-40" pdfMode={pdfMode}>
                 <EditableInput
                   className="bold"
-                  value={'Payment Type'}
-                  onChange={(value) => handleChange('invoiceTitleLabel', value)}
+                  value={"Payment Type"}
+                  onChange={(value) => handleChange("invoiceTitleLabel", value)}
                   pdfMode={pdfMode}
                 />
               </View>
               <View className="w-60" pdfMode={pdfMode}>
                 <EditableSelect
-                options={[{value:'Cash',text:'Cash'},{value:'Credit',text:'Credit'}]}
-                value={invoice.paymentType}
-                onChange={(value) => handleChange( 'paymentType', value)}
-                pdfMode={pdfMode}
-              />
+                  options={[
+                    { value: "Cash", text: "Cash" },
+                    { value: "Credit", text: "Credit" },
+                  ]}
+                  value={invoice.paymentType}
+                  onChange={(value) => handleChange("paymentType", value)}
+                  pdfMode={pdfMode}
+                />
               </View>
             </View>
           </View>
@@ -339,7 +397,7 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
                 <EditableInput
                   className="bold"
                   value={invoice.invoiceTitleLabel}
-                  onChange={(value) => handleChange('invoiceTitleLabel', value)}
+                  onChange={(value) => handleChange("invoiceTitleLabel", value)}
                   pdfMode={pdfMode}
                 />
               </View>
@@ -347,7 +405,7 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
                 <EditableInput
                   placeholder="INV-12"
                   value={invoice.invoiceTitle}
-                  onChange={(value) => handleChange('invoiceTitle', value)}
+                  onChange={(value) => handleChange("invoiceTitle", value)}
                   pdfMode={pdfMode}
                 />
               </View>
@@ -356,7 +414,7 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
               <View className="w-40" pdfMode={pdfMode}>
                 <EditableInput
                   className="bold"
-                  value={'GSTIN'}
+                  value={"GSTIN"}
                   // onChange={(value) => handleChange('invoiceTitleLabel', value)}
                   pdfMode={pdfMode}
                 />
@@ -364,7 +422,7 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
               <View className="w-60" pdfMode={pdfMode}>
                 <EditableInput
                   placeholder="INV-12"
-                  value={'23DGXPP3461E1Z3'}
+                  value={"23DGXPP3461E1Z3"}
                   // onChange={(value) => handleChange('invoiceTitle', value)}
                   pdfMode={pdfMode}
                 />
@@ -375,7 +433,7 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
                 <EditableInput
                   className="bold"
                   value={invoice.invoiceDateLabel}
-                  onChange={(value) => handleChange('invoiceDateLabel', value)}
+                  onChange={(value) => handleChange("invoiceDateLabel", value)}
                   pdfMode={pdfMode}
                 />
               </View>
@@ -385,8 +443,10 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
                   selected={invoiceDate}
                   onChange={(date) =>
                     handleChange(
-                      'invoiceDate',
-                      date && !Array.isArray(date) ? format(date, dateFormat) : ''
+                      "invoiceDate",
+                      date && !Array.isArray(date)
+                        ? format(date, dateFormat)
+                        : ""
                     )
                   }
                   pdfMode={pdfMode}
@@ -398,7 +458,9 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
                 <EditableInput
                   className="bold"
                   value={invoice.invoiceDueDateLabel}
-                  onChange={(value) => handleChange('invoiceDueDateLabel', value)}
+                  onChange={(value) =>
+                    handleChange("invoiceDueDateLabel", value)
+                  }
                   pdfMode={pdfMode}
                 />
               </View>
@@ -408,8 +470,10 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
                   selected={invoiceDueDate}
                   onChange={(date) =>
                     handleChange(
-                      'invoiceDueDate',
-                      date && !Array.isArray(date) ? format(date, dateFormat) : ''
+                      "invoiceDueDate",
+                      date && !Array.isArray(date)
+                        ? format(date, dateFormat)
+                        : ""
                     )
                   }
                   pdfMode={pdfMode}
@@ -420,7 +484,7 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
         </View>
 
         <View className="mt-10 bg-dark flex" pdfMode={pdfMode}>
-        {/* <View className="w-48 p-4-8" pdfMode={pdfMode}>
+          {/* <View className="w-48 p-4-8" pdfMode={pdfMode}>
             <EditableInput
               className="white bold"
               value={'Product Code'}
@@ -431,7 +495,7 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
           <View className="w-48 p-4-8" pdfMode={pdfMode}>
             <EditableInput
               className="white bold"
-              value={'Product Name'}
+              value={"Product Name"}
               // value={invoice.productLineDescription}
               // onChange={(value) => handleChange('productLineDescription', value)}
               pdfMode={pdfMode}
@@ -441,7 +505,7 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
             <EditableInput
               className="white bold right"
               value={invoice.productLineQuantity}
-              onChange={(value) => handleChange('productLineQuantity', value)}
+              onChange={(value) => handleChange("productLineQuantity", value)}
               pdfMode={pdfMode}
             />
           </View>
@@ -449,7 +513,9 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
             <EditableInput
               className="white bold right"
               value={invoice.productLineQuantityRate}
-              onChange={(value) => handleChange('productLineQuantityRate', value)}
+              onChange={(value) =>
+                handleChange("productLineQuantityRate", value)
+              }
               pdfMode={pdfMode}
             />
           </View>
@@ -457,25 +523,29 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
             <EditableInput
               className="white bold right"
               value={invoice.productLineQuantityAmount}
-              onChange={(value) => handleChange('productLineQuantityAmount', value)}
+              onChange={(value) =>
+                handleChange("productLineQuantityAmount", value)
+              }
               pdfMode={pdfMode}
             />
           </View>
         </View>
 
         {invoice.productLines.map((productLine, i) => {
-          return pdfMode && productLine.description === '' ? (
+          return pdfMode && productLine.description === "" ? (
             <Text key={i}></Text>
           ) : (
-            <View key={i} className="row flex" pdfMode={pdfMode}> 
-               <View className="w-48 p-4-8 pb-10" pdfMode={pdfMode}>
-              <EditableSelect
-              options={productListForDropDown}
-              value={productLine.itemNameNew}
-              onChange={(value) => handleProductLineChange(i, 'itemNameNew', value)}
-              pdfMode={pdfMode}
-            />
-            </View>
+            <View key={i} className="row flex" pdfMode={pdfMode}>
+              <View className="w-48 p-4-8 pb-10" pdfMode={pdfMode}>
+                <EditableSelect
+                  options={productListForDropDown}
+                  value={productLine.itemNameNew}
+                  onChange={(value) =>
+                    handleProductLineChange(i, "itemNameNew", value)
+                  }
+                  pdfMode={pdfMode}
+                />
+              </View>
               {/* <View className="w-48 p-4-8 pb-10" pdfMode={pdfMode}>
                 <EditableTextarea
                   className="dark"
@@ -486,12 +556,14 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
                   pdfMode={pdfMode}
                 />
               </View> */}
-             
+
               <View className="w-17 p-4-8 pb-10" pdfMode={pdfMode}>
                 <EditableInput
                   className="dark right"
                   value={productLine.quantity}
-                  onChange={(value) => handleProductLineChange(i, 'quantity', value)}
+                  onChange={(value) =>
+                    handleProductLineChange(i, "quantity", value)
+                  }
                   pdfMode={pdfMode}
                 />
               </View>
@@ -499,7 +571,9 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
                 <EditableInput
                   className="dark right"
                   value={productLine.rate}
-                  onChange={(value) => handleProductLineChange(i, 'rate', value)}
+                  onChange={(value) =>
+                    handleProductLineChange(i, "rate", value)
+                  }
                   pdfMode={pdfMode}
                 />
               </View>
@@ -519,7 +593,7 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
                 </button>
               )}
             </View>
-          )
+          );
         })}
 
         <View className="flex" pdfMode={pdfMode}>
@@ -536,7 +610,7 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
               <View className="w-50 p-5" pdfMode={pdfMode}>
                 <EditableInput
                   value={invoice.subTotalLabel}
-                  onChange={(value) => handleChange('subTotalLabel', value)}
+                  onChange={(value) => handleChange("subTotalLabel", value)}
                   pdfMode={pdfMode}
                 />
               </View>
@@ -550,7 +624,7 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
               <View className="w-50 p-5" pdfMode={pdfMode}>
                 <EditableInput
                   value={invoice.taxLabel}
-                  onChange={(value) => handleChange('taxLabel', value)}
+                  onChange={(value) => handleChange("taxLabel", value)}
                   pdfMode={pdfMode}
                 />
               </View>
@@ -560,12 +634,34 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
                 </Text>
               </View>
             </View>
+            <View className="flex" pdfMode={pdfMode}>
+              <View className="w-50 p-5" pdfMode={pdfMode}>
+                <EditableInput
+                  value={"Paid Amount"}
+                  // onChange={(value) => handleChange('taxLabel', value)}
+                  pdfMode={pdfMode}
+                />
+              </View>
+              <View className="w-50 p-5 flex" pdfMode={pdfMode}>
+                <EditableInput
+                  className="dark bold right ml-30"
+                  value={"-"}
+                  pdfMode={pdfMode}
+                />
+                <EditableInput
+                  className="right bold dark p-10"
+                  value={invoice.partialAmountPaid}
+                  onChange={(value) => handleChange("partialAmountPaid", value)}
+                  pdfMode={pdfMode}
+                />
+              </View>
+            </View>
             <View className="flex bg-gray p-5" pdfMode={pdfMode}>
               <View className="w-50 p-5" pdfMode={pdfMode}>
                 <EditableInput
                   className="bold"
                   value={invoice.totalLabel}
-                  onChange={(value) => handleChange('totalLabel', value)}
+                  onChange={(value) => handleChange("totalLabel", value)}
                   pdfMode={pdfMode}
                 />
               </View>
@@ -573,12 +669,17 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
                 <EditableInput
                   className="dark bold right ml-30"
                   value={invoice.currency}
-                  onChange={(value) => handleChange('currency', value)}
+                  onChange={(value) => handleChange("currency", value)}
                   pdfMode={pdfMode}
                 />
                 <Text className="right bold dark w-auto" pdfMode={pdfMode}>
-                  {(typeof subTotal !== 'undefined' && typeof saleTax !== 'undefined'
-                    ? subTotal + saleTax
+                  {(typeof subTotal !== "undefined" &&
+                  typeof saleTax !== "undefined"
+                    ? invoice.partialAmountPaid
+                      ? subTotal +
+                        saleTax -
+                        parseFloat(invoice.partialAmountPaid)
+                      : subTotal + saleTax
                     : 0
                   ).toFixed(2)}
                 </Text>
@@ -606,44 +707,92 @@ const InvoicePage: FC<Props> = ({ data, pdfMode, addInvoiceData, productListForD
           <EditableInput
             className="bold w-100"
             value={invoice.termLabel}
-            onChange={(value) => handleChange('termLabel', value)}
+            onChange={(value) => handleChange("termLabel", value)}
             pdfMode={pdfMode}
           />
           <EditableTextarea
             className="w-100"
             rows={2}
             value={invoice.term}
-            onChange={(value) => handleChange('term', value)}
+            onChange={(value) => handleChange("term", value)}
             pdfMode={pdfMode}
           />
         </View>
         <View>
-          {
-            !pdfMode &&
-            <div  style={{display:'flex',color:'white',marginRight:'10px',justifyContent:'space-between'}}>
+          {!pdfMode && (
+            <div
+              style={{
+                display: "flex",
+                color: "white",
+                marginRight: "10px",
+                justifyContent: "space-between",
+              }}
+            >
               <div>
-                {!pdfMode && invoice.id &&<button className='btn' style={{background:'blue',color:'white',marginRight:'10px',display:'flex',alignItems:'center'}} onClick={paidInvoice}> 
-                <span className="material-icons">
-                  paid
-                </span>
-                Paid
-                </button>}
+                {!pdfMode && invoice.id && (
+                  <button
+                    className="btn"
+                    style={{
+                      background: "blue",
+                      color: "white",
+                      marginRight: "10px",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onClick={paidInvoice}
+                  >
+                    <span className="material-icons">paid</span>
+                    Paid
+                  </button>
+                )}
               </div>
-              <div style={{display:'flex'}}>
-                {!pdfMode && invoice.id &&<button className='btn' style={{background:'red',color:'white',marginRight:'10px'}} onClick={deleteInvoice}>Delete Invoice</button>}
-                {!pdfMode && invoice.id &&<button className='btn' style={{background:'green',color:'white'}} onClick={updateInvoice}>Update Invoice</button>}
+              <div style={{ display: "flex" }}>
+                {!pdfMode && invoice.id && (
+                  <button
+                    className="btn"
+                    style={{
+                      background: "red",
+                      color: "white",
+                      marginRight: "10px",
+                    }}
+                    onClick={deleteInvoice}
+                  >
+                    Delete Invoice
+                  </button>
+                )}
+                {!pdfMode && invoice.id && (
+                  <button
+                    className="btn"
+                    style={{ background: "green", color: "white" }}
+                    onClick={updateInvoice}
+                  >
+                    Update Invoice
+                  </button>
+                )}
                 {/* {!pdfMode && !invoice.id &&<button className='btn' style={{background:'green',color:'white'}} onClick={saveInvoice}>Save Invoice</button>} */}
-                {!pdfMode && <div onClick={()=>{if(!invoice.id){saveInvoice()}}}><Download data={invoice} buttonName={!invoice.id?'Save and Download':'Download'}/></div> }
+                {!pdfMode && (
+                  <div
+                    onClick={(event) => {
+                      if (!invoice.id) {
+                        saveInvoice(event);
+                      }
+                    }}
+                  >
+                    <Download
+                      data={invoice}
+                      buttonName={
+                        !invoice.id ? "Save and Download" : "Download"
+                      }
+                    />
+                  </div>
+                )}
               </div>
-
             </div>
-          }
-      
+          )}
         </View>
       </Page>
-      
     </Document>
-  )
-}
+  );
+};
 
-export default InvoicePage
+export default InvoicePage;
