@@ -115,16 +115,13 @@ const Dashboard: FC<Props> = ({
     let numberOfFullyPaid = 0;
     let numberOfPartiallyPaid = 0;
     dataList.forEach((invoice: any) => {
-      console.log("i am the incoice ", invoice);
       if (invoice.paymentStatus === "Paid") {
         const newInvoice = sumProductLines(invoice);
         amount = amount + newInvoice.totalAmount;
         numberOfFullyPaid = numberOfFullyPaid + 1;
-        console.log("i am the incoice Piad ", invoice);
       } else if (invoice.partialAmountPaid) {
         amount = amount + parseFloat(invoice.partialAmountPaid || "0");
         numberOfPartiallyPaid = numberOfPartiallyPaid + 1;
-        console.log("i am the incoice partaillPaid ", invoice);
       }
     });
     summary.totalAmount = amount;
@@ -199,13 +196,11 @@ const Dashboard: FC<Props> = ({
     setChartDataDistintCities(JSON.parse(JSON.stringify(options)));
     let options1 = JSON.parse(JSON.stringify(options));
     Object.keys(distinctCities).map((data: any) => {
-      console.log(data);
       (options1.xAxis.categories as any).push(data);
       (options1.series[0].data as any).push(
         getTypeOfAmount(invoiceState, field, data)
       );
     });
-    console.log(options1);
     setChartDataDistintCities(options1);
   };
 
@@ -284,7 +279,6 @@ const Dashboard: FC<Props> = ({
   };
 
   const handleSelect = (ranges: any) => {
-    console.log(ranges);
     setSelectionDate({
       startDate: ranges.selection.startDate,
       endDate: ranges.selection.endDate,

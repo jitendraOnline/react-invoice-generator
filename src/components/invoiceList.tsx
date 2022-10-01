@@ -1,6 +1,5 @@
 import React, { FC, useState, useRef, useCallback } from "react";
 import { AgGridReact } from "ag-grid-react";
-
 import "ag-grid-community/dist/styles/ag-grid.css";
 import "ag-grid-community/dist/styles/ag-theme-alpine.css";
 
@@ -11,6 +10,7 @@ interface Props {
   typeOfList?: any;
   disableActions?: boolean;
   refresh?: any;
+  auth?:any
 }
 
 const InvoiceList: FC<Props> = ({
@@ -20,6 +20,7 @@ const InvoiceList: FC<Props> = ({
   typeOfList,
   disableActions,
   refresh,
+  auth
 }) => {
   const gridRef = useRef();
   const onSelectionChanged = useCallback(() => {
@@ -76,6 +77,12 @@ const InvoiceList: FC<Props> = ({
             parseFloat(params.data.partialAmountPaid || "0") > 0
           ) {
             return { background: "rgb(255 204 0 /.3)" };
+          }
+          else if (
+            params.data.createdBy &&
+            auth?.currentUser?.email !== params.data.createdBy
+          ) {
+            return { background: "rgb(122 206 255/.6)" };
           }
         }}
         rowStyle={{ background: "white" }}

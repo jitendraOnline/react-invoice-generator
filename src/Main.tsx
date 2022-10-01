@@ -1,97 +1,41 @@
 import React, { FC, useState, useEffect } from "react";
 import InvoicePage from "./components/InvoicePage";
-
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-import { getFirestore } from "firebase/firestore";
-import {
-  collection,
-  addDoc,
-  getDoc,
-  doc,
-  getDocs,
-  setDoc,
-  deleteDoc,
-} from "firebase/firestore";
+import { getDocs } from "firebase/firestore";
 import InvoiceList from "./components/invoiceList";
 import { initialInvoice } from "./data/initialData";
 import ProductAddForm from "./components/ProductAdd";
 import { ProductType } from "./data/types";
 import Dashboard from "./components/Dashboard";
-import { firebaseConfig } from "./firebaseConfig";
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-
-const db = getFirestore(app);
-
-const addDoc1 = (data: any, collectionName: string) => {
-  return addDoc(collection(db, collectionName), {
-    ...data,
-    createdDate: new Date(),
-  }).then((dataRetured) => {
-    try {
-      const localInvoiceList = getInvoiceListFromLocalStorage();
-      if (localInvoiceList) {
-        const newInvoice = sumProductLines({ ...data, id: dataRetured.id });
-        localInvoiceList.unshift(newInvoice);
-        setInvoiceListToLocalStorage(localInvoiceList);
-      }
-    } catch (e) {
-      alert("Refresh the list to get latet data..");
-    }
-    console.log("added data", dataRetured.id);
-  });
-};
-
-const docRef = (collectionName: string) => {
-  return collection(db, collectionName);
-};
-
-const setDoc1 = (data: any, collectionName: string, id: any) => {
-  const docRef = doc(db, collectionName, id);
-  return setDoc(docRef, data).then((dataReturned) => {
-    try {
-      const localInvoiceList = getInvoiceListFromLocalStorage();
-      if (data.isDeleted && localInvoiceList && localInvoiceList.length > 0) {
-        const newInvoiceList = localInvoiceList.filter((invoiceLocal: any) => {
-          if (invoiceLocal.id === data.id) {
-            return false;
-          } else {
-            return true;
-          }
-        });
-        setInvoiceListToLocalStorage(newInvoiceList);
-      } else {
-        const newInvoiceList = localInvoiceList.map((invoiceLocal: any) => {
-          if (invoiceLocal.id === data.id) {
-            return sumProductLines(data);
-          } else {
-            return invoiceLocal;
-          }
-        });
-        setInvoiceListToLocalStorage(newInvoiceList);
-      }
-    } catch (e) {
-      alert("Refresh the list to get latet data..");
-    }
-    console.log("updated data with id", dataReturned);
-  });
-};
-
-const deleteDoc1 = (collectionName: string, id: any) => {
-  const docRef = doc(db, collectionName, id);
-  return deleteDoc(docRef).then((data) => {
-    console.log("deleted data", data);
-  });
-};
-
-const getDataById = (collectionName: string, id: any) => {
-  const docRef = doc(db, collectionName, id);
-  return getDoc(docRef);
-};
+import InventoryList from "./components/InventoryList";
+import {
+  getInvoiceListFromLocalStorage,
+  setInvoiceListToLocalStorage,
+  sumProductLines,
+} from "./storage/invoice";
+import { sortListDescending } from "./utils";
+import {
+  getProductListFromLocalStorage,
+  setProductListToLocalStorage,
+} from "./storage/product";
+import {
+  addInventoryData,
+  getInventoryListFromLocalStorage,
+  preProcessInventoryList,
+  setInventoryListToLocalStorage,
+} from "./storage/inventory";
+import ClientList from "./components/ClientList";
+import {
+  getClientListFromLocalStorage,
+  setClientListToLocalStorage,
+} from "./storage/clients";
+import {
+  addDoc1,
+  auth,
+  docRef,
+  getDataById,
+  setDoc1,
+} from "./storage/serverOperation";
+import { addDepositData, getDeposit } from "./storage/deposits";
 
 const invoiceListColumn = [
   {
@@ -189,63 +133,19 @@ const productLisColumnt = [
     },
     sortingOrder: ["desc", "asc"],
   },
-  { field: "cost", filter: "agNumberColumnFilter", sortable: true },
-  { field: "cost_cash", filter: "agNumberColumnFilter", sortable: true },
+  {
+    field: "cost",
+    filter: "agNumberColumnFilter",
+    sortable: true,
+    headerName: "Seeling Price ",
+  },
+  {
+    field: "cost_cash",
+    filter: "agNumberColumnFilter",
+    sortable: true,
+    headerName: "Seeling Price Cash ",
+  },
 ];
-
-const sumProductLines = (data: any) => {
-  data.totalAmount = 0;
-  data.productLines.forEach((pdItem: any) => {
-    const quantityNumber = parseFloat(pdItem.quantity);
-    const rateNumber = parseFloat(pdItem.rate);
-    const amount =
-      quantityNumber && rateNumber ? quantityNumber * rateNumber : 0;
-    data.totalAmount = data.totalAmount + amount;
-  });
-  return data;
-};
-
-///LogalStorageSaveData
-
-const capitalizeFirstLetter = (value: string) => {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-};
-//capitalize all words of a string.
-const capitalizeWords = (value: string) => {
-  return value.replace(/(?:^|\s)\S/g, function (a) {
-    return a.toUpperCase();
-  });
-};
-
-const getDistinctTypesToLocalStorage = (data: any, field: any) => {
-  let distinctValuesOfField: any = {};
-  data.forEach((data: any) => {
-    let key = (data[field] + "").toLowerCase();
-    if (distinctValuesOfField[key]) {
-      distinctValuesOfField[key] = distinctValuesOfField[key] + 1;
-    } else {
-      distinctValuesOfField[key] = 1;
-    }
-  });
-  localStorage.setItem(
-    field,
-    JSON.stringify(
-      Object.keys(distinctValuesOfField).map((value) => {
-        return capitalizeWords(value);
-      })
-    )
-  );
-};
-
-const setInvoiceListToLocalStorage = (InvoiceList: []) => {
-  getDistinctTypesToLocalStorage(InvoiceList, "clientName");
-  getDistinctTypesToLocalStorage(InvoiceList, "clientAddress");
-  localStorage.setItem("InvoiceList", JSON.stringify(InvoiceList));
-};
-
-const getInvoiceListFromLocalStorage = () => {
-  return JSON.parse(localStorage.getItem("InvoiceList") || "[]");
-};
 
 interface Props {
   logout?: any;
@@ -254,11 +154,15 @@ interface Props {
 const Main: FC<Props> = ({ logout }) => {
   const [productList, setProductList] = useState([]);
   const [invoiceList, setInvoiceList] = useState([]);
+  const [inventoryList, setInventoryList] = useState([]);
+  const [clientList, setClientList] = useState([]);
+  const [clientId, setClientId] = useState('');
   const [intialData, setintialData] = useState();
-  const [showInvoice, setShowInvoice] = useState("");
+  const [showInvoice, setShowInvoice] = useState("clients");
   const [selectedProduct, setSelectedProduct] = useState<Partial<ProductType>>({
     id: "",
   });
+
   const [deletedProductList, setDeletedProductList] = useState([]);
 
   const [columnDefs, setColumnDefs] = useState(invoiceListColumn as any);
@@ -268,60 +172,61 @@ const Main: FC<Props> = ({ logout }) => {
     if (localInvoiceList && localInvoiceList.length > 0 && DoNotrefresh) {
       setInvoiceList(localInvoiceList);
       return;
+    } else {
+      console.log("GETTING FROM SERVER ->", "INVOICE");
+      getDocs(docRef("invoiceList"))
+        .then((querySnapshot) => {
+          let list: any = [];
+          querySnapshot.forEach((doc) => {
+            let data = doc.data();
+            data.id = doc.id;
+            data = sumProductLines(data);
+            if (!data.isDeleted) {
+              if (
+                auth.currentUser?.email &&
+                auth.currentUser?.email?.indexOf("admin") > -1
+              ) {
+                list.push(data);
+              } else {
+                if (data.createdBy === auth.currentUser?.email) {
+                  list.push(data);
+                }
+              }
+            }
+          });
+          const sortedList = sortListDescending(list);
+          setInvoiceList(sortedList);
+          setInvoiceListToLocalStorage(sortedList);
+        })
+        .catch((e) => {
+          console.log("Error by fetching invoiveList", e);
+          alert(
+            "Unable to fetch Invoice list. Please check your internet connection or login again "
+          );
+        });
     }
-    getDocs(docRef("invoiceList")).then((querySnapshot) => {
-      let list: any = [];
-      querySnapshot.forEach((doc) => {
-        let data = doc.data();
-        data.totalAmount = 0;
-        data.productLines.forEach((pdItem: any) => {
-          const quantityNumber = parseFloat(pdItem.quantity);
-          const rateNumber = parseFloat(pdItem.rate);
-          const amount =
-            quantityNumber && rateNumber ? quantityNumber * rateNumber : 0;
-          data.totalAmount = data.totalAmount + amount;
-        });
-        data.id = doc.id;
-        if (!data.isDeleted) {
-          list.push(data);
-        }
-      });
-      try {
-        const sortedList = list.sort((obj1: any, obj2: any) => {
-          let valueA = obj1 && obj1.invoiceDate;
-          let valueB = obj2 && obj2.invoiceDate;
-          if (!valueA) {
-            return 1;
-          } else if (!valueB) {
-            return -1;
-          }
-          const cellDateA = new Date(valueA);
-          const cellDateB = new Date(valueB);
-          if (cellDateA == cellDateB) return 0;
-          return cellDateA > cellDateB ? -1 : 1;
-        });
-        setInvoiceList(sortedList);
-        setInvoiceListToLocalStorage(sortedList);
-      } catch (e) {
-        setInvoiceList(list);
-        setInvoiceListToLocalStorage(list);
-      }
-      //setInvoiceList(list);
-    });
   };
 
   const getInvoice = (id: any) => {
     if (id === "createNew") {
       setintialData(initialInvoice as any);
-      setShowInvoice("");
+      setShowInvoice("createInvoice");
     } else {
-      getDataById("invoiceList", id).then((docSnap) => {
-        if (docSnap.exists()) {
-          let invoiceData = docSnap.data();
-          setintialData({ ...invoiceData, id } as any);
-          setShowInvoice("");
-        }
-      });
+      console.log("GETTING FROM SERVER -INVOICE",id);
+      getDataById("invoiceList", id)
+        .then((docSnap) => {
+          if (docSnap.exists()) {
+            let invoiceData = docSnap.data();
+            setintialData({ ...invoiceData, id } as any);
+            setShowInvoice("createInvoice");
+          }
+        })
+        .catch((e) => {
+          console.log("Error", e);
+          alert(
+            "Unable to fetch data. Check your internet connection or login again"
+          );
+        });
     }
   };
 
@@ -333,57 +238,100 @@ const Main: FC<Props> = ({ logout }) => {
     }, 100);
   };
 
+  const reduceInventoryAfterInvoice = (data: any) => {
+      const promiseList: any = [];
+      data.productLines
+        .filter((obj: any) => {
+          return obj.productId;
+        })
+        .forEach((product: any) => {
+          let negativeInventory = {
+            type: "sold",
+            quantity: -product.quantity,
+            productId: product.productId,
+            expiryDate: null,
+            productName: product.itemNameNew,
+            shopNumber:
+              auth.currentUser?.email?.indexOf("admin") === -1 ? "2" : "1",
+            invoiceId: data.id,
+            //invoice:data,
+          };
+          promiseList.push(addInventoryData(negativeInventory));
+        });
+      return Promise.all(promiseList)
+        .then((values) => {
+          console.log("All the line items are sold");
+        })
+        .then(() => {
+          return { status: "Done" };
+        });
+    };
+
+  const createNewInvoice = (data: any, collectionName: string) => {
+      return addDoc1(data, "invoiceList").then((dataReturned: any) => {
+        const deposit = {
+          type: "invoice",
+          clientName: data.clientName,
+          clientId: data.clientId,
+          amount: -sumProductLines(data).totalAmount || 0,
+          dateOfDeposit: new Date(),
+          depositer: "Invoice",
+          notes: "purchased items",
+          invoiceId: dataReturned.id,
+        };
+       return addDepositData(deposit).then(() => {
+          return reduceInventoryAfterInvoice({
+            ...data,
+            id: dataReturned.id,
+          });
+        });
+      });
+  };
+
   const updateInvoiceData = (data: any) => {
     return setDoc1(data, "invoiceList", data.id);
   };
 
-  //get product list and perform operation
-  const getList = () => {
-    setProductList([]);
-    setTimeout(() => {
-      getDocs(docRef("productList")).then((querySnapshot) => {
-        let list: any = [];
-        querySnapshot.forEach((doc) => {
-          // doc.data() is never undefined for query doc snapshots
-          let data = doc.data();
-          data.id = doc.id;
-          if (!data.isDeleted) {
-            list.push(data);
-          }
-        });
-        setProductList(
-          list.sort((a: { text: any }, b: { text: any }) =>
-            a.text > b.text ? 1 : -1
-          )
-        );
-      });
-    }, 1000);
-  };
-
   const getProductList = (DoNotrefresh?: boolean) => {
-    setTimeout(() => {
-      getDocs(docRef("productList")).then((querySnapshot) => {
-        let list: any = [];
-        let deletedList: any = [];
-        querySnapshot.forEach((doc) => {
-          let data = doc.data();
-          data.id = doc.id;
-          if (!data.isDeleted) {
-            list.push(data);
-          } else {
-            deletedList.push(data);
-          }
+    const localProductList = getProductListFromLocalStorage();
+    if (localProductList && localProductList.length > 0 && DoNotrefresh) {
+      setProductList(localProductList);
+      return;
+    } else {
+      console.log("GETTING DATA FROM SERVER:PRODUCT LIST");
+      getDocs(docRef("productList"))
+        .then((querySnapshot) => {
+          let list: any = [];
+          let deletedList: any = [];
+          querySnapshot.forEach((doc) => {
+            let data = doc.data();
+            data.id = doc.id;
+            data.text = data.text.trim();
+            data.value = data.value.trim();
+            if (!data.isDeleted) {
+              list.push(data);
+            } else {
+              deletedList.push(data);
+            }
+          });
+          const sortedProductList = list.sort(
+            (a: { text: any }, b: { text: any }) =>
+              a.text?.trim() > b.text?.trim() ? 1 : -1
+          );
+          const deletedProductList = deletedList.sort(
+            (a: { text: any }, b: { text: any }) =>
+              a.text?.trim() > b.text?.trim() ? 1 : -1
+          );
+          setProductList(sortedProductList);
+          setDeletedProductList(deletedProductList);
+          setProductListToLocalStorage(sortedProductList);
+        })
+        .catch((e) => {
+          alert(
+            "Unable to get Product list. Please check your internet connection or login again"
+          );
         });
-        const sortedProductList = list.sort(
-          (a: { text: any }, b: { text: any }) => (a.text > b.text ? 1 : -1)
-        );
-        const deletedProductList = deletedList.sort(
-          (a: { text: any }, b: { text: any }) => (a.text > b.text ? 1 : -1)
-        );
-        setProductList(sortedProductList);
-        setDeletedProductList(deletedProductList);
-      });
-    }, 1000);
+    }
   };
 
   const getProductData = (id: any, data: ProductType) => {
@@ -407,7 +355,7 @@ const Main: FC<Props> = ({ logout }) => {
     setSelectedProduct({});
     setColumnDefs(productLisColumnt);
     setShowInvoice("product");
-    getProductList();
+    getProductList(true);
   };
 
   const showDeletedProductList = () => {
@@ -418,13 +366,121 @@ const Main: FC<Props> = ({ logout }) => {
   };
 
   const refresh = () => {
-    getList();
-    getInvoiceList();
+    getProductList(false);
+    getInvoiceList(false);
+  };
+
+  //getInventoryList
+  const getInventoryList = (DoNotrefresh?: boolean) => {
+    const localInventoryList = getInventoryListFromLocalStorage();
+    if (localInventoryList && localInventoryList.length > 0 && DoNotrefresh) {
+      setInventoryList(localInventoryList as any);
+      return;
+    } else {
+      console.log("GETTING FROM SERVER ->",'INVENTORY');
+      getDocs(docRef("inventory"))
+        .then((querySnapshot) => {
+          let list: any = [];
+          querySnapshot.forEach((doc) => {
+            let data = doc.data();
+            data.id = doc.id;
+            data.createdDate = data.createdDate
+              ? data.createdDate.toMillis && data.createdDate.toMillis()
+              : new Date().getMilliseconds();
+            list.push(data);
+          });
+          const preProcessedInventoryList = preProcessInventoryList(list);
+          setInventoryList(list);
+          setInventoryListToLocalStorage(preProcessedInventoryList as any);
+        })
+        .catch((e) => {
+          console.log("error", e);
+          alert("Unable to get Inventory List");
+        });
+    }
+  };
+
+  const getClientList = (DoNotrefresh?: boolean) => {
+    const localClientList = getClientListFromLocalStorage();
+    if (localClientList && localClientList.length > 0 && DoNotrefresh) {
+      setClientList(localClientList);
+      return;
+    } else {
+      console.log("GETTING FROM SERVER ->", "CLIENTLIST");
+      getDocs(docRef("clients"))
+        .then((querySnapshot) => {
+          let list: any = [];
+          querySnapshot.forEach((doc) => {
+            let data = doc.data();
+            data.id = doc.id;
+            list.push(data);
+          });
+          const preProcessedClientList = sortListDescending(list, "name");
+          setClientList(preProcessedClientList as any);
+          setClientListToLocalStorage(preProcessedClientList as any);
+        })
+        .catch((e) => {
+          console.log("error", e);
+          alert("Unable to get Client List");
+        });
+    }
+  };
+
+  const refreshProductList = () => {
+    getProductList(false);
+  };
+  const refreshInventoryList = () => {
+    getInventoryList(false);
+  };
+  const refreshInvoiceList = () => {
+    getInvoiceList(false);
+  };
+  const refreshClientList = () => {
+    getDeposit(false);
+    getClientList(false);
+    getInventoryList(false);
+  };
+
+  const navigateToScreen = (screenName: string,type?:string,dataforScreen?: any,) => {
+    if (dataforScreen) {
+      if (screenName === "createInvoice") {
+        setClientId("");
+        if (type ==='data') {
+          setintialData({
+            ...initialInvoice,
+            clientName: dataforScreen.name,
+            clientAddress2: dataforScreen.phoneNumber,
+            clientAddress: dataforScreen.city,
+            clientId: dataforScreen.id,
+          } as any);
+          setShowInvoice(screenName);
+        } else if (type === "id") {
+          getInvoice(dataforScreen);
+        }
+      }
+      if (screenName === "clients") {
+        if (type === "data") {
+          setClientId(dataforScreen);
+          setShowInvoice(screenName);
+        } else if (type === "id") {
+          getInvoice(dataforScreen);
+        }
+      }
+    } else {
+      setClientId('');
+      setintialData({ ...initialInvoice } as any);
+      setSelectedProduct({ text: "", value: "", cost: "0", cost_cash: "0" });
+      setShowInvoice(screenName);
+    }
+    
   };
 
   useEffect(() => {
-    getList();
-    getInvoiceList();
+    getProductList(true);
+    getInvoiceList(true);
+   // getInventoryList(true);
+   // getClientList(true);
+    getDeposit(true);
   }, []);
 
   return (
@@ -442,10 +498,46 @@ const Main: FC<Props> = ({ logout }) => {
               alignItems: "center",
               justifyContent: "space-between",
             }}
+            onClick={() => {
+              navigateToScreen("inventory");
+            }}
+          >
+            <span className="material-icons">inventory_2</span>
+            <span className="menuItemTitle">Inventory</span>
+          </div>
+          <div
+            style={{
+              padding: "10px",
+              margin: "10px",
+              cursor: "pointer",
+              borderBottom: "2px solid #ccc",
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+            onClick={() => {
+              navigateToScreen("clients");
+            }}
+          >
+            <span className="material-icons">group</span>
+            <span className="menuItemTitle">Users</span>
+          </div>
+          <div
+            style={{
+              padding: "10px",
+              margin: "10px",
+              cursor: "pointer",
+              borderBottom: "2px solid #ccc",
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
             onClick={showInvoiceList}
           >
             <span className="material-icons">receipt_long</span>
-            Invoices
+            <span className="menuItemTitle">Invoices</span>
           </div>
           <div
             style={{
@@ -461,7 +553,7 @@ const Main: FC<Props> = ({ logout }) => {
             onClick={() => showProductList()}
           >
             <span className="material-icons">category</span>
-            Products
+            <span className="menuItemTitle">Products</span>
           </div>
           <div
             style={{
@@ -475,12 +567,13 @@ const Main: FC<Props> = ({ logout }) => {
               justifyContent: "space-between",
             }}
             onClick={() => {
-              setShowInvoice("dashboard");
+              navigateToScreen("dashboard");
             }}
           >
             <span className="material-icons">dashboard</span>
-            Dashboard
+            <span className="menuItemTitle">Dashboard</span>
           </div>
+
           <div
             style={{
               padding: "10px",
@@ -495,7 +588,28 @@ const Main: FC<Props> = ({ logout }) => {
             onClick={logout}
           >
             <span className="material-icons">logout</span>
-            Logout
+            <span className="menuItemTitle">Logout</span>
+          </div>
+
+          <div
+            style={{
+              padding: "10px",
+              margin: "10px",
+              cursor: "pointer",
+              borderBottom: "2px solid #ccc",
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+
+            onClick={()=>{(window.location as any).reload(true)}}
+            //@TODO Configure shop detatils//counter and number of user per counter.
+            //payment methods like bank details to maintain the records in bank.
+            //add product category to let them select from whilte creating product.
+          >
+            <span className="material-icons">browser_updated</span>
+            <span className="menuItemTitle">Update</span>
           </div>
         </div>
       </div>
@@ -513,16 +627,19 @@ const Main: FC<Props> = ({ logout }) => {
           {/* <h1 className="center fs-30" style={{color:'green'}}>OM SAI KRISHI SEVA KENDRA 
           
           </h1> */}
-          {!showInvoice ? (
+          {showInvoice === "createInvoice" && (
             <InvoicePage
+              navigateToScreen={navigateToScreen}
               data={intialData ? intialData : false}
-              addInvoiceData={addDoc1}
+              //experiemnt for inverntory
+              // addInvoiceData={addDoc1}
+              addInvoiceData={createNewInvoice}
               productList={productList}
               showInvoiceList={showInvoiceList}
               productListForDropDown={productList}
               updateInvoiceData={updateInvoiceData}
             />
-          ) : null}
+          )}
           {showInvoice === "showProductForm" && (
             <ProductAddForm
               selectedProduct={selectedProduct}
@@ -534,10 +651,10 @@ const Main: FC<Props> = ({ logout }) => {
               recoverProductData={undeleteProductData}
             ></ProductAddForm>
           )}
-
           {showInvoice === "invoice" && (
             <InvoiceList
-              refresh={refresh}
+              refresh={refreshInvoiceList}
+              auth={auth}
               data={invoiceList}
               createOrUpdateAction={getInvoice}
               columnDefs={columnDefs}
@@ -546,6 +663,7 @@ const Main: FC<Props> = ({ logout }) => {
           )}
           {showInvoice === "product" && (
             <InvoiceList
+              refresh={refreshProductList}
               data={productList}
               columnDefs={columnDefs}
               createOrUpdateAction={getProductData}
@@ -571,6 +689,20 @@ const Main: FC<Props> = ({ logout }) => {
                 disableActions={true}
               ></InvoiceList>
             </Dashboard>
+          )}
+          {showInvoice === "inventory" && (
+            <InventoryList
+              productList1={productList}
+              addDoc1={addDoc1}
+              refresh={refreshInventoryList}
+            ></InventoryList>
+          )}
+          {showInvoice === "clients" && (
+            <ClientList
+              clientId={clientId}
+              refresh={refreshClientList}
+              navigateToScreen={navigateToScreen}
+            ></ClientList>
           )}
         </div>
         <div style={{ height: "50px" }}></div>

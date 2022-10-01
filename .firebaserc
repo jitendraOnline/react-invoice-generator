@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "shree-sai-kirpa"
-  }
+    "default": "shree-sai-kirpa",
+    "manoj": "om-krishi-seva-kendra",
+    "vypaar":"vypaar"
+  },
+  "targets": {}
 }

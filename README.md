@@ -4,16 +4,19 @@ React Invoice Generator allows you quickly make invoices and save them as PDF. [
 
 ![react-invoice-generator](https://raw.githubusercontent.com/tuanpham-dev/react-invoice-generator/master/screenshot.png)
 
-
 ## to delpoy on firebase
+
 1.  find and replace /react-invoice-generator to empty string from index.html in build folder.
-2. remove . from manifest.json
+2.  remove . from manifest.json
+3.  firebase deploy -P manoj
 
 ## need to repalce this inside firebase module
- export declare type AddPrefixToKeys<Prefix extends string, T extends Record<string, unknown>> = {
-replace  [K in keyof T & string as `${Prefix}.${K}`]+?: T[K];
-+ new   [K in keyof T & string]+?: T[K];
- };
+
+export declare type AddPrefixToKeys<Prefix extends string, T extends Record<string, unknown>> = {
+replace [K in keyof T & string as `${Prefix}.${K}`]+?: T[K];
+
+- new [K in keyof T & string]+?: T[K];
+  };
 
 ## Available Scripts
 

@@ -1,22 +1,32 @@
 import React, { FC, useState } from "react";
 import { companyName } from "../data/initialData";
 
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+
+const auth = getAuth();
+
 interface Props {
   className?: string;
   login?: any;
   googleSignIn?: any;
-  setShowScreen?: any;
 }
 
-const LoginPage: FC<Props> = ({ login, googleSignIn, setShowScreen }) => {
+const SignUp: FC<Props> = ({ login, googleSignIn }) => {
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
 
   const loginHandle = () => {
-    login(userName, password, true);
-  };
-  const SignInWithGoole = () => {
-    googleSignIn();
+    createUserWithEmailAndPassword(auth, userName, password)
+      .then((userCredential) => {
+        // Signed in
+        const user = userCredential.user;
+        // ...
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        // ..
+      });
   };
 
   return (
@@ -37,17 +47,13 @@ const LoginPage: FC<Props> = ({ login, googleSignIn, setShowScreen }) => {
               setPassword(event.target.value);
             }}
           ></input>
-          <button className="btn" onClick={loginHandle}>
-            Login
-          </button>
-
-          {/* <button className="btn" onClick={() => setShowScreen("signUp")}>
+          <button className="btn" style={{border:'1px solid blue'}} onClick={loginHandle}>
             Sign Up
-          </button> */}
+          </button>
         </div>
       </div>
     </>
   );
 };
 
-export default LoginPage;
+export default SignUp;

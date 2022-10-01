@@ -1,8 +1,8 @@
 {
-  "name": "invoice-generator",
-  "version": "0.2.1",
+  "name": "omsaikrishiseva",
+  "version": "4.0.0",
   "private": true,
-  "homepage": "https://tuanpham-dev.github.io/react-invoice-generator/",
+  "homepage": "https://shree-sai-kirpa.web.app/?v=4",
   "dependencies": {
     "@react-pdf/renderer": "^2.0.18",
     "@testing-library/jest-dom": "^4.2.4",
@@ -26,6 +26,7 @@
     "react-dom": "^16.13.1",
     "react-router-dom": "^6.2.1",
     "react-scripts": "3.4.1",
+    "react-select": "^5.4.0",
     "react-textarea-autosize": "^8.2.0",
     "typescript": "~3.7.2"
   },
